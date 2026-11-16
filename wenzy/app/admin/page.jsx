@@ -15,6 +15,15 @@ async function upload(file, folder) {
   if (error) throw error;
   return path;
 }
+function verifyImageUrl(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const timeout = setTimeout(() => { image.src = ''; reject(new Error('The uploaded logo could not be verified publicly.')); }, 10000);
+    image.onload = () => { clearTimeout(timeout); resolve(); };
+    image.onerror = () => { clearTimeout(timeout); reject(new Error('The uploaded logo could not be loaded from public storage.')); };
+    image.src = url;
+  });
+}
 const Field = ({ label, children, className }) => <div className={className}><label className="label">{label}</label>{children}</div>;
 const Card = ({ children, className }) => <div className={clsx('rounded-2xl border border-[var(--line)] bg-white p-5', className)}>{children}</div>;
 const Thumb = ({ path, type }) => path ? (type === 'video' ? <video src={mediaUrl(path)} className="h-full w-full object-cover" muted /> : <img src={mediaUrl(path)} alt="" className="h-full w-full object-cover" />) : <div className="h-full w-full bg-neutral-100" />;
@@ -295,8 +304,26 @@ function Settings() {
   useEffect(() => { supabase.from('site_settings').select('*').eq('id', 1).single().then(({ data }) => setS(data)); }, []);
   async function logo(e) {
     const file = e.target.files[0]; if (!file) return; setBusy(true);
-    try { const path = await upload(file, 'brand'); const old = s.logo_path; const { error } = await supabase.from('site_settings').update({ logo_path: path }).eq('id', 1); if (error) throw error; if (old) await supabase.storage.from(BUCKET).remove([old]); setS({ ...s, logo_path: path }); toast.success('Logo updated'); }
-    catch (err) { toast.error(err.message); } setBusy(false);
+    let path = null; let committed = false;
+    try {
+      path = await upload(file, 'brand');
+      await verifyImageUrl(mediaUrl(path));
+      const { data: updated, error } = await supabase.from('site_settings').update({ logo_path: path }).eq('id', 1).select('id,logo_path').single();
+      if (error) throw error;
+      if (!updated?.logo_path) throw new Error('The logo setting was not updated.');
+      committed = true;
+      const old = s.logo_path;
+      let cleanupError = null;
+      if (old && old !== path) ({ error: cleanupError } = await supabase.storage.from(BUCKET).remove([old]));
+      setS({ ...s, logo_path: path });
+      cleanupError ? toast.success('Logo updated; the previous file needs cleanup.') : toast.success('Logo updated');
+    } catch (err) {
+      if (path && !committed) {
+        const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
+        if (cleanupError) err.message += ` The new upload could not be cleaned up: ${cleanupError.message}`;
+      }
+      toast.error(err.message);
+    } finally { setBusy(false); e.target.value = ''; }
   }
   async function save() { const { brand_name, announcement, contact_email } = s; const { error } = await supabase.from('site_settings').update({ brand_name, announcement, contact_email, updated_at: new Date().toISOString() }).eq('id', 1); error ? toast.error(error.message) : toast.success('Settings saved'); }
   if (!s) return <p className="text-[var(--muted)]">Loading…</p>;

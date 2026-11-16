@@ -9,10 +9,11 @@ export const metadata = { title: 'WENZY', description: 'WENZY — considered clo
 export default async function RootLayout({ children }) {
   const { data: s } = await supabase.from('site_settings').select('*').eq('id', 1).single();
   const brand = s?.brand_name || 'WENZY';
+  const logoUrl = s?.logo_path ? `${mediaUrl(s.logo_path)}?v=${encodeURIComponent(s.logo_path)}` : null;
   return (
     <html lang="en">
       <body>
-        <Header logoUrl={mediaUrl(s?.logo_path)} brand={brand} announcement={s?.announcement} />
+        <Header logoUrl={logoUrl} brand={brand} announcement={s?.announcement} />
         <main>{children}</main>
         <Footer brand={brand} email={s?.contact_email || 'wenzy.originals@gmail.com'} />
         <CartDrawer />
