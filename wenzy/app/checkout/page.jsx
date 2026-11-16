@@ -25,7 +25,7 @@ export default function Checkout() {
       const headers = { 'Content-Type': 'application/json' };
       if (sessionData.session?.access_token) headers.Authorization = `Bearer ${sessionData.session.access_token}`;
       const r = await fetch('/api/orders', { method: 'POST', headers, body: JSON.stringify({ items: items.map((i) => ({ productId: i.productId, size: i.size, qty: i.qty })), customer: f }) });
-      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Could not start payment');
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Could not place order');
       clear(); setDone(d.orderNo);
     } catch (err) { toast.error(err.message); setBusy(false); }
   }
