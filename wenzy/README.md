@@ -1,9 +1,9 @@
 # WENZY storefront
 
-Next.js 14 · Tailwind · Supabase (auth, Postgres, Storage) · Razorpay
+Next.js 14 · Tailwind · Supabase (auth, Postgres, Storage)
 
 ## Run
-1. `cp .env.example .env.local` and fill the three empty values (service-role key, Razorpay key id + secret).
+1. `cp .env.example .env.local` and fill the service-role key.
 2. `npm install && npm run dev` → http://localhost:3000
 3. Deploy to Vercel (add the same env vars there).
 
@@ -15,5 +15,5 @@ Add `https://YOUR-DOMAIN/admin` to Authentication → URL Configuration → Redi
 
 ## Notes
 - Media lives in the public Storage bucket `wenzy-media` (logo, banners, collections, product images/videos).
-- Prices and stock are always re-checked on the server in `/api/checkout`; payment signature verified in `/api/verify`; stock is decremented atomically by `finalize_paid_order()`.
+- Prices and stock are re-checked on the server in `/api/orders`; checkout currently creates a payment-free order intent. Payment processing is intentionally deferred.
 - Free-shipping threshold / fee: `lib/config.js`.

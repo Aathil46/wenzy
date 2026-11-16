@@ -6,6 +6,15 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'WENZY', description: 'WENZY — considered clothing.' };
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fafaf9' },
+    { media: '(prefers-color-scheme: dark)', color: '#171717' },
+  ],
+};
 export default async function RootLayout({ children }) {
   const { data: s } = await supabase.from('site_settings').select('*').eq('id', 1).single();
   const brand = s?.brand_name || 'WENZY';
